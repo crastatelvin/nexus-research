@@ -1,0 +1,9 @@
+# Drop your README preview screenshots in this folder.
+# Expected filenames (referenced from README.md → Application Preview):
+#
+#   landing.png           — Landing page with the question form
+#   agent-graph.png       — Live ReactFlow agent topology mid-run
+#   agent-cards.png       — Agent status cards + live event feed
+#   sources-critique.png  — Discovered sources grid and critic review
+#   final-report.png      — Completed research report section
+#   pdf-export.png        — A page from the exported PDF
