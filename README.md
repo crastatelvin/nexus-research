@@ -63,7 +63,6 @@ The backend is built with **FastAPI** and uses the **Groq Python SDK** against `
 
 ## 🖼️ Application Preview
 
-> Drop your screenshots into `docs/screenshots/` and they'll render here.
 
 <div align="center">
 
