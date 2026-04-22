@@ -496,6 +496,10 @@ npm run build
 
 ---
 
+## License
+
+This project is licensed under the MIT License. See [LICENSE](./LICENSE).
+
 Made with ❤️ for anyone who's ever wanted to watch AI agents think out loud.
 
 ⭐ Star this repo if you find it useful!
