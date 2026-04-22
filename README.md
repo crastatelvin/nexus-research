@@ -57,6 +57,10 @@ Users can:
 - Export the completed brief as a **branded, searchable PDF** with one click
 - Run fully offline in **demo mode** (deterministic content, no API key required)
 
+## License
+
+This project is licensed under the MIT License. See [LICENSE](./LICENSE).
+
 The backend is built with **FastAPI** and uses the **Groq Python SDK** against `llama-3.3-70b-versatile` and `llama-3.1-8b-instant`, with **DuckDuckGo** (`AsyncDDGS` + `httpx` HTML fallback) for web search and **BeautifulSoup** for page scraping. Every agent has its own model, temperature, and token cap — routed to keep a full run under a ~12k token budget on the free tier.
 
 ---
@@ -492,20 +496,8 @@ npm run build
 
 ---
 
-## 📜 License
-
-Licensed under the **MIT License** — see [LICENSE](LICENSE) for details.
-
----
-
-<div align="center">
-
 Made with ❤️ for anyone who's ever wanted to watch AI agents think out loud.
 
 ⭐ Star this repo if you find it useful!
 
 </div>
-
-## License
-
-This project is licensed under the MIT License. See [LICENSE](./LICENSE).
