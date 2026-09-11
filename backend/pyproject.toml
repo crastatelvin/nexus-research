@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "nexus-research"
+version = "2.0.0"
+description = "Multi-agent AI research workspace with CrewAI-style architecture"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.30,<1",
+    "pydantic>=2.9,<3",
+    "python-dotenv>=1.0,<2",
+    "groq>=0.9,<1",
+    "httpx>=0.27,<1",
+    "beautifulsoup4>=4.12,<5",
+    "duckduckgo-search>=6.1,<7",
+    "pytest>=8.3,<9",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3,<9", "pytest-asyncio"]
+crewai = ["crewai[tools]>=0.80"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["backend*", "lib*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
