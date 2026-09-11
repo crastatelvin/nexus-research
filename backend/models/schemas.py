@@ -86,6 +86,7 @@ class AnalystSynthesis(BaseModel):
             # LLM might use shorter names like "themes", "consensus", etc.
             mapping = {
                 "themes": "key_themes",
+                "theme_list": "key_themes",
                 "consensus": "consensus_points",
                 "conflicts": "conflicting_points",
                 "gaps": "knowledge_gaps",
@@ -98,13 +99,20 @@ class AnalystSynthesis(BaseModel):
             # Flatten list-of-objects to list-of-strings for all fields
             for field_name in ("key_themes", "consensus_points", "conflicting_points", "knowledge_gaps"):
                 items = value.get(field_name, [])
-                if items and isinstance(items[0], dict):
+                if items and isinstance(items, list):
+                    flattened = []
+                    for item in items:
+                        if isinstance(item, dict):
+                            # Extract meaningful string from dict
+                            text = item.get("name") or item.get("theme") or item.get("point") or item.get("description", "")
+                            if text:
+                                flattened.append(str(text))
+                            else:
+                                flattened.append(json.dumps(item))
+                        else:
+                            flattened.append(str(item))
                     value = dict(value)
-                    value[field_name] = [
-                        item.get("theme", item.get("point", str(item)))
-                        if isinstance(item, dict) else str(item)
-                        for item in items
-                    ]
+                    value[field_name] = flattened
             return value
         return value
 

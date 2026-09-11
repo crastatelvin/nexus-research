@@ -139,6 +139,12 @@ class GroqService:
         if not text:
             raise GroqResponseError("Groq returned an empty response.")
 
+        # Strip markdown code fences that some models add (```json ... ``` or ``` ... ```)
+        lines = text.split("\n")
+        if lines[0].startswith("```"):
+            # Remove first line (language tag) and last line (closing fence)
+            text = "\n".join(lines[1:-1]) if len(lines) > 2 and lines[-1].strip().startswith("```") else text
+
         try:
             parsed = schema.model_validate(json.loads(text))
         except (json.JSONDecodeError, ValidationError):
@@ -170,6 +176,10 @@ class GroqService:
             retry_text = (retry_response.choices[0].message.content or "").strip()
             if not retry_text:
                 raise GroqResponseError("Groq returned an empty response.")
+            # Strip markdown code fences from retry response too
+            retry_lines = retry_text.split("\n")
+            if retry_lines[0].startswith("```"):
+                retry_text = "\n".join(retry_lines[1:-1]) if len(retry_lines) > 2 and retry_lines[-1].strip().startswith("```") else retry_text
             try:
                 parsed = schema.model_validate(json.loads(retry_text))
                 response = retry_response
