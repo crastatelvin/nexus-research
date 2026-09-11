@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 
-import { createResearchRun, getResearchRun } from '../services/api'
+import { createResearchRun, getResearchRun, listRuns } from '../services/api'
 
 export default function useResearch() {
   const [loading, setLoading] = useState(false)
@@ -56,7 +56,6 @@ export default function useResearch() {
       return applyRun(run)
     } catch (requestError) {
       if (requestError.response?.status === 404) {
-        // Backend restarts clear in-memory runs; stop polling stale run ids.
         setLoading(false)
         setResult(null)
         setRunId('')
@@ -69,6 +68,15 @@ export default function useResearch() {
       return null
     }
   }, [applyRun])
+
+  const fetchHistory = useCallback(async (limit = 20) => {
+    try {
+      const runs = await listRuns(limit)
+      return runs
+    } catch (e) {
+      return []
+    }
+  }, [])
 
   const reset = useCallback(() => {
     setLoading(false)
@@ -92,6 +100,7 @@ export default function useResearch() {
     resolvedMode,
     startResearch,
     fetchRun,
+    fetchHistory,
     reset,
   }
 }

@@ -8,14 +8,14 @@ from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 
 from agents.crew import NEXUSCrew
 from lib.logging_setup import logger
 from models.schemas import AgentEvent, ResearchRequest, ResearchResult, ResearchStartResponse
 from services.demo_service import DemoResearchService
 from services.groq_service import GroqService
-from services.run_store import RunStore
+from services.persistent_store import PersistentRunStore, create_run_store
 from services.settings import Settings
 
 load_dotenv()
@@ -35,7 +35,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     resolved_settings = settings or Settings.from_env()
     groq_service = GroqService(resolved_settings)
     demo_service = DemoResearchService(event_delay_ms=resolved_settings.demo_event_delay_ms)
-    store = RunStore()
+    store = create_run_store(resolved_settings)
     app = FastAPI(title="NEXUS Research API", version="2.0-CrewAI")
 
     app.add_middleware(
@@ -44,6 +44,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Serve SPA fallback for GitHub Pages (only catch non-API paths)
+    api_paths = {"/", "/research", "/latest", "/status", "/runs", "/ws"}
+    try:
+        from pathlib import Path
+        dist_dir = Path(__file__).parent.parent / "frontend" / "dist"
+        index_html = dist_dir / "index.html"
+        if index_html.exists():
+            @app.get("/{path_name:path}", include_in_schema=False)
+            async def spa_fallback(path_name: str = "") -> HTMLResponse:
+                # Don't intercept API endpoints
+                if path_name.startswith("research") or path_name in ("latest", "status", "runs", "ws"):
+                    raise HTTPException(status_code=404)
+                full_path = (dist_dir / path_name)
+                if full_path.exists() and full_path.is_file():
+                    return HTMLResponse(content=full_path.read_text())
+                return HTMLResponse(content=index_html.read_text())
+    except Exception:
+        pass
 
     app.state.settings = resolved_settings
     app.state.groq_service = groq_service
@@ -161,6 +180,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def get_status() -> JSONResponse:
         status = await app.state.run_store.get_status(groq_configured=app.state.groq_service.is_available)
         return JSONResponse(status)
+
+    @app.get("/runs")
+    async def list_runs(limit: int = 20) -> JSONResponse:
+        runs = await app.state.run_store.list_runs(limit=limit)
+        return JSONResponse(jsonable_encoder(runs))
 
     return app
 

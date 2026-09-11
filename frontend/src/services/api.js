@@ -23,7 +23,11 @@ export async function getLatestResearch() {
   return response.data
 }
 
+export async function listRuns(limit = 20) {
+  const response = await api.get(`/runs?limit=${limit}`)
+  return response.data
+}
+
 export function getWebSocketUrl() {
   return websocketURL
 }
-
