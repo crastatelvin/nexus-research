@@ -79,6 +79,35 @@ class AnalystSynthesis(BaseModel):
     conflicting_points: list[str] = Field(default_factory=list)
     knowledge_gaps: list[str] = Field(default_factory=list)
 
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_fields(cls, value: Any) -> Any:
+        if isinstance(value, dict):
+            # LLM might use shorter names like "themes", "consensus", etc.
+            mapping = {
+                "themes": "key_themes",
+                "consensus": "consensus_points",
+                "conflicts": "conflicting_points",
+                "gaps": "knowledge_gaps",
+            }
+            for old_name, new_name in mapping.items():
+                if old_name in value and new_name not in value:
+                    value = dict(value)
+                    value[new_name] = value.pop(old_name)
+
+            # Flatten list-of-objects to list-of-strings for all fields
+            for field_name in ("key_themes", "consensus_points", "conflicting_points", "knowledge_gaps"):
+                items = value.get(field_name, [])
+                if items and isinstance(items[0], dict):
+                    value = dict(value)
+                    value[field_name] = [
+                        item.get("theme", item.get("point", str(item)))
+                        if isinstance(item, dict) else str(item)
+                        for item in items
+                    ]
+            return value
+        return value
+
 
 class CritiqueConfidence(BaseModel):
     rating: ConfidenceRating = "MEDIUM"
@@ -133,7 +162,7 @@ class ResearchReport(BaseModel):
         if isinstance(value, dict):
             # key_findings might be [{"finding": "..."}] instead of ["..."]
             kf = value.get("key_findings", [])
-            if kf and isinstance(kf[0], dict):
+            if kf and isinstance(kf, list) and len(kf) > 0 and isinstance(kf[0], dict):
                 value = dict(value)
                 value["key_findings"] = [
                     item.get("finding", item) if isinstance(item, dict) else str(item)
