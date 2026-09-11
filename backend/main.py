@@ -10,6 +10,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from lib.logging_setup import logger
 from agents.analyst import run_analyst
 from agents.critic import run_critic
 from agents.scout import run_scout
@@ -67,9 +68,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     async def execute_pipeline(run_id: str) -> None:
         try:
-            print(f"[{run_id}] Pipeline started")
+            logger.info("[%s] Pipeline started", run_id)
             run = await app.state.run_store.mark_running(run_id)
-            print(f"[{run_id}] Run marked as running, mode: {run.mode}")
+            logger.info("[%s] Run marked as running, mode: %s", run_id, run.mode)
             
             await broadcast(
                 AgentEvent(
@@ -82,7 +83,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
             await app.state.demo_service.pause()
 
-            print(f"[{run_id}] Running SCOUT...")
+            logger.info("[%s] Running SCOUT...", run_id)
             scout_output = await run_scout(
                 run_id=run_id,
                 question=run.question,
@@ -93,10 +94,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 demo_service=app.state.demo_service,
                 broadcast=broadcast,
             )
-            print(f"[{run_id}] SCOUT completed, found {len(scout_output['sources'])} sources")
+            logger.info("[%s] SCOUT completed, found %d sources", run_id, len(scout_output['sources']))
             await app.state.demo_service.pause()
 
-            print(f"[{run_id}] Running ANALYST...")
+            logger.info("[%s] Running ANALYST...", run_id)
             analyst_output = await run_analyst(
                 run_id=run_id,
                 question=run.question,
@@ -108,10 +109,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 demo_service=app.state.demo_service,
                 broadcast=broadcast,
             )
-            print(f"[{run_id}] ANALYST completed, found {len(analyst_output['findings'])} findings")
+            logger.info("[%s] ANALYST completed, found %d findings", run_id, len(analyst_output['findings']))
             await app.state.demo_service.pause()
 
-            print(f"[{run_id}] Running CRITIC...")
+            logger.info("[%s] Running CRITIC...", run_id)
             critic_output = await run_critic(
                 run_id=run_id,
                 question=run.question,
@@ -123,10 +124,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 demo_service=app.state.demo_service,
                 broadcast=broadcast,
             )
-            print(f"[{run_id}] CRITIC completed")
+            logger.info("[%s] CRITIC completed", run_id)
             await app.state.demo_service.pause()
 
-            print(f"[{run_id}] Running SCRIBE...")
+            logger.info("[%s] Running SCRIBE...", run_id)
             scribe_output = await run_scribe(
                 run_id=run_id,
                 question=run.question,
@@ -140,7 +141,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 demo_service=app.state.demo_service,
                 broadcast=broadcast,
             )
-            print(f"[{run_id}] SCRIBE completed")
+            logger.info("[%s] SCRIBE completed", run_id)
 
             result = ResearchResult(
                 question=run.question,
@@ -154,7 +155,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 report=scribe_output["report"],
             )
             await app.state.run_store.set_result(run_id, result)
-            print(f"[{run_id}] Result stored, research complete")
+            logger.info("[%s] Result stored, research complete", run_id)
             
             await broadcast(
                 AgentEvent(
@@ -167,7 +168,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
         except Exception as exc:
             error_msg = f"{type(exc).__name__}: {str(exc)}\n{traceback.format_exc()}"
-            print(f"[{run_id}] ERROR: {error_msg}")
+            logger.error("[%s] ERROR: %s", run_id, error_msg)
             await app.state.run_store.set_error(run_id, str(exc))
             await broadcast(
                 AgentEvent(
