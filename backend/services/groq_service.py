@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from hashlib import sha256
 from typing import TypeVar
 
@@ -9,9 +10,18 @@ from pydantic import BaseModel, ValidationError
 from services.settings import Settings
 
 try:
-    from groq import AsyncGroq
+    from openai import AsyncOpenAI
+    _HAS_OPENAI = True
 except ImportError:  # pragma: no cover
-    AsyncGroq = None  # type: ignore[assignment,misc]
+    AsyncOpenAI = None  # type: ignore[assignment,misc]
+    _HAS_OPENAI = False
+
+try:
+    from groq import AsyncGroq as _AsyncGroq
+    _HAS_GROQ = True
+except ImportError:  # pragma: no cover
+    _AsyncGroq = None  # type: ignore[assignment,misc]
+    _HAS_GROQ = False
 
 SchemaT = TypeVar("SchemaT", bound=BaseModel)
 
@@ -29,7 +39,7 @@ class GroqBudgetExceededError(RuntimeError):
 
 
 class GroqService:
-    """LLM service — powered by Groq (free tier, fast inference)."""
+    """LLM service — powered by Groq (or OpenAI-compatible proxy like OmniRoute)."""
 
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -38,8 +48,20 @@ class GroqService:
         self._cache: dict[str, BaseModel] = {}
         self._run_estimated_tokens: dict[str, int] = {}
         self._client = None
-        if self.api_key and AsyncGroq is not None:
-            self._client = AsyncGroq(api_key=self.api_key)
+
+        # Check for OmniRoute/OpenAI-compatible proxy
+        openai_base = os.getenv("OPENAI_BASE_URL") or os.getenv("GROQ_BASE_URL")
+        if openai_base and _HAS_OPENAI:
+            # Use OpenAI-compatible client for proxy access
+            self._client = AsyncOpenAI(
+                base_url=openai_base.rstrip("/"),
+                api_key=os.getenv("OPENAI_API_KEY", self.api_key),
+            )
+        elif self.api_key and _HAS_OPENAI:
+            # Fallback to OpenAI client for Groq compatibility
+            self._client = AsyncOpenAI(api_key=self.api_key)
+        elif _HAS_GROQ:
+            self._client = _AsyncGroq(api_key=self.api_key)
 
     @property
     def is_available(self) -> bool:
