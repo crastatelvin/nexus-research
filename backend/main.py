@@ -45,25 +45,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Serve SPA fallback for GitHub Pages (only catch non-API paths)
-    api_paths = {"/", "/research", "/latest", "/status", "/runs", "/ws"}
-    try:
-        from pathlib import Path
-        dist_dir = Path(__file__).parent.parent / "frontend" / "dist"
-        index_html = dist_dir / "index.html"
-        if index_html.exists():
-            @app.get("/{path_name:path}", include_in_schema=False)
-            async def spa_fallback(path_name: str = "") -> HTMLResponse:
-                # Don't intercept API endpoints
-                if path_name.startswith("research") or path_name in ("latest", "status", "runs", "ws"):
-                    raise HTTPException(status_code=404)
-                full_path = (dist_dir / path_name)
-                if full_path.exists() and full_path.is_file():
-                    return HTMLResponse(content=full_path.read_text())
-                return HTMLResponse(content=index_html.read_text())
-    except Exception:
-        pass
-
     app.state.settings = resolved_settings
     app.state.groq_service = groq_service
     app.state.demo_service = demo_service
@@ -187,6 +168,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(jsonable_encoder(runs))
 
     return app
+
+
+# SPA fallback MUST be last — after create_app() so it doesn't shadow API routes
+try:
+    from pathlib import Path
+    _dist_dir = Path(__file__).parent.parent / "frontend" / "dist"
+    _index_html = _dist_dir / "index.html"
+    if _index_html.exists():
+        @app.get("/{path_name:path}", include_in_schema=False)
+        async def _spa_fallback(path_name: str = "") -> HTMLResponse:
+            full_path = (_dist_dir / path_name)
+            if full_path.exists() and full_path.is_file():
+                return HTMLResponse(content=full_path.read_text())
+            return HTMLResponse(content=_index_html.read_text())
+except Exception:
+    pass
 
 
 app = create_app()
