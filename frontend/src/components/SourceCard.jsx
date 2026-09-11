@@ -1,4 +1,5 @@
 import React from 'react'
+import { motion } from 'framer-motion'
 
 function getDomain(url) {
   try {
@@ -21,56 +22,67 @@ export default function SourceCard({ source, index }) {
   const domain = getDomain(source.url)
   const favicon = getFavicon(source.url)
 
+  // Calculate estimated read time
+  const wordCount = (source.snippet || '').split(/\s+/).length
+  const readTime = Math.max(1, Math.ceil(wordCount / 200))
+
   return (
-    <a
+    <motion.a
       href={source.url}
       target="_blank"
       rel="noreferrer"
-      className="group flex h-full flex-col rounded-3xl border border-white/8 bg-white/4 p-5 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/6 hover:shadow-[0_18px_40px_rgba(5,10,20,0.45)]"
+      whileHover={{ y: -4, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="group block rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-glass)] p-5 transition-all hover:border-[var(--border-strong)] hover:shadow-lg hover:shadow-[var(--accent-primary)]/10"
     >
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          {favicon ? (
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          {favicon && (
             <img
               src={favicon}
               alt=""
               width={16}
               height={16}
-              className="h-4 w-4 rounded-sm bg-white/10"
+              className="flex-shrink-0 rounded bg-white/10"
               loading="lazy"
-              referrerPolicy="no-referrer"
-              onError={(event) => {
-                event.currentTarget.style.display = 'none'
-              }}
+              onError={(e) => (e.currentTarget.style.display = 'none')}
             />
-          ) : null}
-          <span className="truncate text-xs font-medium uppercase tracking-[0.18em] text-[var(--accent-soft)]">
+          )}
+          <span className="truncate text-xs font-mono uppercase tracking-widest text-[var(--accent-soft)]">
             {domain}
           </span>
         </div>
-        {typeof index === 'number' ? (
-          <span className="shrink-0 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-[var(--muted)]">
-            {String(index + 1).padStart(2, '0')}
-          </span>
-        ) : null}
+        <span className="flex-shrink-0 text-[10px] font-mono text-[var(--text-muted)] bg-[var(--bg-glass)] px-2 py-1 rounded-full border border-[var(--border-subtle)]">
+          #{String(index + 1).padStart(2, '0')}
+        </span>
       </div>
 
-      <h3 className="text-base font-semibold leading-6 text-white transition group-hover:text-[var(--accent)]">
+      {/* Title */}
+      <h3 className="text-sm font-semibold leading-snug text-white mb-3 line-clamp-2 group-hover:text-[var(--accent-primary)] transition-colors">
         {source.title}
       </h3>
 
-      <p className="mt-3 line-clamp-4 text-sm leading-6 text-[var(--text-soft)]">
+      {/* Snippet */}
+      <p className="text-sm leading-relaxed text-[var(--text-soft)] line-clamp-3 mb-4">
         {source.snippet || 'No snippet available.'}
       </p>
 
-      <p
-        className="mt-4 flex items-center gap-1.5 text-xs text-[var(--muted)] transition group-hover:text-[var(--accent-soft)]"
-        title={source.url}
-      >
-        <span className="truncate">{source.url}</span>
-        <span aria-hidden="true" className="shrink-0">→</span>
-      </p>
-    </a>
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-3 border-t border-[var(--border-subtle)]">
+        <span className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          ~{readTime} min read
+        </span>
+        <span className="text-xs text-[var(--accent-primary)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+          Visit source
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </span>
+      </div>
+    </motion.a>
   )
 }
-

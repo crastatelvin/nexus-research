@@ -1,126 +1,89 @@
 import React from 'react'
-import { useEffect, useState } from 'react'
-// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion'
 
-const exampleQuestions = [
-  'How are research teams using AI in due diligence?',
-  'What is changing in enterprise knowledge management?',
-  'How should leaders evaluate AI copilots for analysts?',
-]
+export default function SearchBar({ onSearch, loading, compact, initialQuestion, initialDepth, initialMode }) {
+  const [question, setQuestion] = React.useState(initialQuestion || '')
+  const [depth, setDepth] = React.useState(initialDepth || 'standard')
+  const [mode, setMode] = React.useState(initialMode || 'auto')
 
-export default function SearchBar({
-  onSearch,
-  loading,
-  compact = false,
-  initialQuestion = '',
-  initialDepth = 'standard',
-  initialMode = 'auto',
-}) {
-  const [question, setQuestion] = useState(initialQuestion)
-  const [depth, setDepth] = useState(initialDepth)
-  const [mode, setMode] = useState(initialMode)
-
-  useEffect(() => {
-    // Sync externally-provided starter values into local draft state.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setQuestion(initialQuestion)
-  }, [initialQuestion])
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDepth(initialDepth)
-  }, [initialDepth])
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMode(initialMode)
-  }, [initialMode])
-
-  const submit = () => {
-    const trimmed = question.trim()
-    if (!trimmed || loading) {
-      return
-    }
-    onSearch({ question: trimmed, depth, mode })
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!question.trim() || loading) return
+    onSearch({ question: question.trim(), depth, mode })
   }
 
   return (
-    <div className="space-y-4">
-      <div className={`field-shell ${compact ? 'p-3' : 'p-4 md:p-5'}`}>
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-          <div className="flex-1 space-y-2">
-            <label className="label-eyebrow">Research Question</label>
-            <textarea
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              onKeyDown={(event) => {
-                if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-                  submit()
-                }
-              }}
-              placeholder="Ask NEXUS a research question..."
-              className="min-h-28 w-full resize-none bg-transparent text-base text-[var(--text)] outline-none placeholder:text-[var(--muted)]"
-              disabled={loading}
-            />
-          </div>
-
-          <div className="grid gap-3 lg:w-[240px]">
-            <div className="space-y-2">
-              <label className="label-eyebrow">Depth</label>
-              <select
-                value={depth}
-                onChange={(event) => setDepth(event.target.value)}
-                disabled={loading}
-                className="select-shell"
-              >
-                <option value="standard">Standard</option>
-                <option value="deep">Deep</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="label-eyebrow">Mode</label>
-              <select
-                value={mode}
-                onChange={(event) => setMode(event.target.value)}
-                disabled={loading}
-                className="select-shell"
-              >
-                <option value="auto">Auto</option>
-                <option value="live">Live Groq</option>
-                <option value="demo">Demo</option>
-              </select>
-            </div>
-
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={submit}
-              disabled={loading || !question.trim()}
-              className="action-button"
-            >
-              {loading ? 'Research Running...' : 'Start Research'}
-            </motion.button>
-          </div>
+    <motion.form
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      onSubmit={handleSubmit}
+      className={`rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-4 ${compact ? '' : 'max-w-3xl'}`}
+    >
+      <div className="flex gap-3">
+        <div className="flex-1 relative">
+          <svg 
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]"
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Enter your research question..."
+            className="w-full pl-12 pr-4 py-3 rounded-lg bg-[var(--bg-glass)] border border-[var(--border-subtle)] text-white placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20 transition-all"
+            disabled={loading}
+          />
         </div>
+        
+        <select
+          value={depth}
+          onChange={(e) => setDepth(e.target.value)}
+          className="px-4 py-3 rounded-lg bg-[var(--bg-glass)] border border-[var(--border-subtle)] text-white focus:outline-none focus:border-[var(--accent-primary)] transition-all cursor-pointer"
+          disabled={loading}
+        >
+          <option value="standard">Standard</option>
+          <option value="deep">Deep</option>
+        </select>
+
+        <select
+          value={mode}
+          onChange={(e) => setMode(e.target.value)}
+          className="px-4 py-3 rounded-lg bg-[var(--bg-glass)] border border-[var(--border-subtle)] text-white focus:outline-none focus:border-[var(--accent-primary)] transition-all cursor-pointer"
+          disabled={loading}
+        >
+          <option value="auto">Auto</option>
+          <option value="live">Live</option>
+          <option value="demo">Demo</option>
+        </select>
+
+        <button
+          type="submit"
+          disabled={loading || !question.trim()}
+          className="action-button px-6"
+        >
+          {loading ? (
+            <>
+              <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Running...
+            </>
+          ) : (
+            'Research'
+          )}
+        </button>
       </div>
 
-      {!compact && !loading ? (
-        <div className="flex flex-wrap gap-2">
-          {exampleQuestions.map((example) => (
-            <button
-              key={example}
-              type="button"
-              onClick={() => setQuestion(example)}
-              className="pill pill-muted"
-            >
-              {example}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
+      {!compact && (
+        <p className="mt-3 text-xs text-[var(--text-muted)]">
+          Powered by multi-agent AI pipeline · {mode === 'live' ? 'Real-time web search with LLM analysis' : mode === 'demo' ? 'Simulation mode for testing' : 'Auto-detects optimal mode'}
+        </p>
+      )}
+    </motion.form>
   )
 }
-

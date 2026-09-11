@@ -1,74 +1,81 @@
 import React from 'react'
-// eslint-disable-next-line no-unused-vars
-import { AnimatePresence, motion } from 'framer-motion'
-
-import { ACTIVE_STATUSES, AGENT_META, COMPLETE_STATUSES } from '../services/agentMeta'
+import { motion } from 'framer-motion'
 
 export default function AgentCard({ agent, status, message }) {
-  const meta = AGENT_META[agent]
-  const isActive = ACTIVE_STATUSES.has(status)
-  const isComplete = COMPLETE_STATUSES.has(status)
-  const statusLabel = isComplete ? 'Complete' : isActive ? 'Active' : status === 'error' ? 'Error' : 'Idle'
+  const meta = {
+    SCOUT: { color: 'var(--agent-scout)', tone: 'Researcher', description: 'Maps coverage' },
+    ANALYST: { color: 'var(--agent-analyst)', tone: 'Analyst', description: 'Extracts insights' },
+    CRITIC: { color: 'var(--agent-critic)', tone: 'Critic', description: 'Stress-tests' },
+    SCRIBE: { color: 'var(--agent-scribe)', tone: 'Writer', description: 'Synthesizes report' },
+  }[agent] || { color: 'var(--text-muted)', tone: agent, description: '' }
+
+  const isActive = status === 'active'
+  const isComplete = status === 'complete'
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      whileHover={{ y: -2 }}
       className="panel relative overflow-hidden"
       style={{
-        borderColor: isActive || isComplete ? `${meta.color}55` : undefined,
-        boxShadow: isActive ? `0 20px 50px ${meta.color}20` : undefined,
+        borderColor: isActive || isComplete ? `${meta.color}40` : undefined,
+        boxShadow: isActive ? `0 8px 32px ${meta.color}20` : undefined,
       }}
     >
-      <div
-        className="absolute inset-x-0 top-0 h-px"
-        style={{
-          background: isActive || isComplete ? `linear-gradient(90deg, transparent, ${meta.color}, transparent)` : 'transparent',
-        }}
-      />
-
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
-          <p className="label-eyebrow" style={{ color: meta.color }}>
-            {meta.tone}
-          </p>
-          <h3 className="mt-2 text-lg font-semibold text-white">{agent}</h3>
-          <p className="mt-2 text-sm text-[var(--muted)]">{meta.description}</p>
+      {/* Top accent line */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-current to-transparent opacity-0 group-hover:opacity-100" 
+           style={{ color: meta.color }} />
+      
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-3">
+          <div 
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
+            style={{ background: `${meta.color}15`, border: `1px solid ${meta.color}30` }}
+          >
+            {agent === 'SCOUT' && '🔍'}
+            {agent === 'ANALYST' && '📊'}
+            {agent === 'CRITIC' && '⚡'}
+            {agent === 'SCRIBE' && '✍️'}
+          </div>
+          <div>
+            <p className="text-xs font-mono uppercase tracking-widest" style={{ color: meta.color }}>
+              {meta.tone}
+            </p>
+            <h3 className="font-semibold text-white text-sm">{agent}</h3>
+          </div>
         </div>
-        <span
-          className="status-chip"
-          style={{
-            borderColor: `${meta.color}55`,
-            color: isComplete ? '#b9ffcc' : meta.color,
-            background: `${meta.color}14`,
+        <span 
+          className="status-chip text-xs"
+          style={{ 
+            borderColor: `${meta.color}30`,
+            color: isComplete ? '#48bb78' : isActive ? meta.color : 'var(--text-muted)',
+            background: `${meta.color}10`,
           }}
         >
-          {statusLabel}
+          {isComplete ? 'Done' : isActive ? 'Active' : 'Idle'}
         </span>
       </div>
 
-      <div className="mb-4 flex gap-2">
-        {[0, 1, 2].map((item) => (
+      {/* Pulse dots */}
+      <div className="flex gap-1.5 mb-3">
+        {[0, 1, 2].map((i) => (
           <span
-            key={item}
-            className={`h-2.5 w-2.5 rounded-full transition ${isActive ? 'agent-dot-live' : 'bg-white/8'}`}
-            style={isActive ? { animationDelay: `${item * 160}ms`, backgroundColor: meta.color } : undefined}
+            key={i}
+            className={`w-2 h-2 rounded-full transition-all ${isActive ? 'agent-dot-live' : 'bg-[var(--text-muted)]/30'}`}
+            style={isActive ? { 
+              animationDelay: `${i * 150}ms`, 
+              backgroundColor: meta.color 
+            } : undefined}
           />
         ))}
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.p
-          key={message || status}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          className="min-h-14 text-sm leading-6 text-[var(--text-soft)]"
-        >
-          {message || `${agent} is waiting for work.`}
-        </motion.p>
-      </AnimatePresence>
+      <p className="text-sm text-[var(--text-secondary)] leading-relaxed min-h-[40px]">
+        {message || `Waiting for ${agent.toLowerCase()}...`}
+      </p>
     </motion.article>
   )
 }
-
