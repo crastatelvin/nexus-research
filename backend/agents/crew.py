@@ -18,6 +18,7 @@ from typing import Any, Awaitable, Callable
 from models.schemas import (
     AgentEvent,
     AnalystSynthesis,
+    BatchSourceExtractions,
     Critique,
     FindingItem,
     QueryPlan,
@@ -225,18 +226,6 @@ class AnalystAgent(CrewAgent):
                 f'Return JSON: {{"extractions": [{{"findings": [{{"statement":"...", "evidence":"..."}}]}}]}}\n\n{sources_block}'
             )
 
-            batch = await self.groq.generate_structured(
-                prompt=batch_prompt,
-                schema=type("BatchOut", (), {"__pydantic_model__": None})(),  # stub
-                system_instruction="You are ANALYST. Extract only relevant, evidence-based findings.",
-                model=self.settings.groq_model_analyst,
-                max_tokens=self.settings.token_cap_analyst_extract,
-                temperature=0.2,
-                run_id=self.ctx.run_id,
-                agent=self.name,
-            )
-            # Re-parse using actual schema via demo fallback logic
-            from models.schemas import BatchSourceExtractions
             batch = await self.groq.generate_structured(
                 prompt=batch_prompt,
                 schema=BatchSourceExtractions,

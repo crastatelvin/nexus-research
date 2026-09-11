@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from typing import Any, Literal
 
@@ -59,7 +60,11 @@ class FindingItem(BaseModel):
 class SourceExtraction(BaseModel):
     # Loose bounds: we want to accept whatever the LLM returns without triggering a
     # validation failure / retry. Downstream code takes the top N statements anyway.
-    findings: list[FindingItem] = Field(default_factory=list, min_length=1, max_length=8)
+    findings: list[FindingItem] = Field(default_factory=list, min_length=1, max_length=10)
+
+
+class BatchSourceExtractions(BaseModel):
+    extractions: list[SourceExtraction] = Field(default_factory=list)
 
 
 class SourceFinding(BaseModel):
@@ -121,6 +126,32 @@ class ResearchReport(BaseModel):
     critical_perspectives: str = ""
     conclusion: str = ""
     recommendations: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_fields(cls, value: Any) -> Any:
+        if isinstance(value, dict):
+            # key_findings might be [{"finding": "..."}] instead of ["..."]
+            kf = value.get("key_findings", [])
+            if kf and isinstance(kf[0], dict):
+                value = dict(value)
+                value["key_findings"] = [
+                    item.get("finding", item) if isinstance(item, dict) else str(item)
+                    for item in kf
+                ]
+            # critical_perspectives might be a nested dict
+            cp = value.get("critical_perspectives")
+            if isinstance(cp, dict):
+                value = dict(value)
+                value["critical_perspectives"] = json.dumps(cp)
+            # Convert all string fields to str explicitly
+            for field_name in ("executive_summary", "background", "analysis", "conclusion"):
+                v = value.get(field_name)
+                if v is not None and not isinstance(v, str):
+                    value = dict(value)
+                    value[field_name] = json.dumps(v) if isinstance(v, (list, dict)) else str(v)
+            return value
+        return value
 
 
 class ResearchResult(BaseModel):
