@@ -176,9 +176,9 @@ class ResearchReport(BaseModel):
                     item.get("finding", item) if isinstance(item, dict) else str(item)
                     for item in kf
                 ]
-            # critical_perspectives might be a nested dict
+            # critical_perspectives might be a nested dict or list
             cp = value.get("critical_perspectives")
-            if isinstance(cp, dict):
+            if isinstance(cp, (dict, list)):
                 value = dict(value)
                 value["critical_perspectives"] = json.dumps(cp)
             # Convert all string fields to str explicitly

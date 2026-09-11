@@ -180,14 +180,30 @@ class GroqService:
             retry_lines = retry_text.split("\n")
             if retry_lines[0].startswith("```"):
                 retry_text = "\n".join(retry_lines[1:-1]) if len(retry_lines) > 2 and retry_lines[-1].strip().startswith("```") else retry_text
+            
+            # Extract first complete JSON object if there's extra trailing content
             try:
                 parsed = schema.model_validate(json.loads(retry_text))
-                response = retry_response
-                text = retry_text
-            except json.JSONDecodeError as exc:
-                raise GroqResponseError(
-                    f"Groq returned malformed JSON: {retry_text[:200]}"
-                ) from exc
+            except json.JSONDecodeError:
+                # Try to find valid JSON by looking for matching braces
+                depth = 0
+                for i, char in enumerate(retry_text):
+                    if char == '{':
+                        depth += 1
+                    elif char == '}':
+                        depth -= 1
+                        if depth == 0:
+                            try:
+                                parsed = schema.model_validate(json.loads(retry_text[:i+1]))
+                                response = retry_response
+                                text = retry_text[:i+1]
+                                break
+                            except:
+                                continue
+                else:
+                    raise GroqResponseError(
+                        f"Groq returned malformed JSON: {retry_text[:200]}"
+                    )
             except ValidationError as exc:
                 first_error = exc.errors()[0] if exc.errors() else {"msg": "unknown validation error"}
                 raise GroqResponseError(
