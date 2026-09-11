@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Awaitable, Callable
 
+from lib.finding_helpers import _finding_text
 from models.schemas import (
     AgentEvent,
     AnalystSynthesis,
@@ -15,13 +16,6 @@ from services.groq_service import GroqService
 from services.settings import Settings
 
 BroadcastFn = Callable[[AgentEvent], Awaitable[None]]
-
-
-def _finding_text(finding) -> str:
-    """Extract plain text from a FindingItem or str."""
-    if hasattr(finding, "statement"):
-        return finding.statement
-    return str(finding)
 
 
 async def run_scribe(

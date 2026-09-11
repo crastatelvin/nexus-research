@@ -7,6 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel, model_validator
 
+from lib.finding_helpers import _finding_text
 from models.schemas import (
     AgentEvent,
     AnalystSynthesis,
@@ -47,13 +48,6 @@ class BatchSourceExtractions(BaseModel):
             if numeric_items and all("findings" in item for item in numeric_items):
                 return {"extractions": numeric_items}
         return value
-
-
-def _finding_text(finding) -> str:
-    """Extract plain text from a FindingItem or str."""
-    if hasattr(finding, "statement"):
-        return finding.statement
-    return str(finding)
 
 
 async def run_analyst(
