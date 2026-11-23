@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/images/nexus-logo.png" alt="NEXUS Research logo" width="180"/>
+
 # 🧠 NEXUS Research
 
 ### A Multi-Agent AI Research Workspace — Watch Four Agents Turn a Question Into a Structured Brief
